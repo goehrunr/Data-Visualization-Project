@@ -1,0 +1,502 @@
+---
+title: "Taiwan_Trafficking_Data"
+author: "Ryan Goehrung"
+date: "2/11/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+To load necessary packages:
+```{r, message=FALSE}
+library(tidyverse)
+library(readr)
+```
+
+To load apprehensions, prosecution, and aggregated data files:
+```{r, message=FALSE}
+HT_data <- read_csv("HT_cases_data.csv")
+
+case_data <- read_csv("Taiwan_prosecution_data.csv")
+
+ag_data <- read_csv("Taiwan_Trafficking_Data_Aggregated.csv")
+
+global <- read_csv("HT_Global_Dataset.csv")
+```
+
+
+To produce plots of apprehension data by type
+```{r}
+#To transform the apprehension data, to get count data by type
+apprehension <- HT_data %>%
+  group_by(year, type) %>%
+  summarise(N = n())
+
+#To plot apprehension data by type, grey-scale
+ggplot(apprehension, aes(x = year, y = N, fill = type)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018)) +
+  scale_y_continuous(breaks = seq(0, 110, 20)) +
+  labs(x = "Year",
+       y = "Number of Apprehensions",
+       title = "Figure 1:",
+      subtitle = "Human Trafficking Apprehensions in Taiwan") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  facet_grid(~type)
+
+
+
+
+#To plot apprehension data by type, in color
+ggplot(apprehension, aes(x = year, y = N, fill = type)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018)) +
+  scale_y_continuous(breaks = seq(0, 110, 20)) +
+  scale_fill_manual(values = c("skyblue1", "tomato1")) +
+  labs(x = "Year",
+       y = "Number of Apprehensions",
+       title = "Human Trafficking Apprehensions in Taiwan, 2009-2018") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x = element_text(angle = 45),
+        strip.text = element_text(face = "bold", size = 12),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 18),
+        strip.background = element_blank()) +
+  facet_grid(~type)
+```
+
+```{r}
+#To produce plot of the Number of Apprehensions by Organization
+apprehension <- HT_data %>%
+  group_by(year, organization) %>%
+  summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  mutate(freq = N / sum(N),
+         pct = round((freq*100), 0)) %>%
+  subset(year <= 2016)
+
+
+p <- ggplot(apprehension, aes(x = year, y = N, fill = organization))
+p + geom_col(position = "dodge") + 
+  scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016)) +
+  labs(x = "Year",
+       y = "Number of Apprehensions, by Organization") +
+  theme(legend.position = "top")
+
+
+#To produce plot of the Number of Apprehensions by type & by organization
+apprehension <- HT_data %>%
+  group_by(year, type, organization) %>%
+  summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year, type) %>%
+  mutate(freq = N / sum(N),
+         pct = round((freq*100), 0)) %>%
+  subset(year <= 2016)
+
+
+p <- ggplot(apprehension, aes(x = year, y = N, fill = organization))
+p + geom_col(position = "dodge") + 
+  scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016)) +
+  labs(x = "Year",
+       y = "Number of Apprehensions, by Organization") +
+  theme(legend.position = "top") +
+  facet_grid(~type)
+
+
+
+#To produce small multiples by organization and type of trafficking
+apprehension <- HT_data %>%
+  group_by(year, organization, type) %>%
+  summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year, type) %>%
+  mutate(freq = N / sum(N),
+         pct = round((freq*100), 0)) %>%
+  subset(year <= 2016) 
+
+
+p <- ggplot(apprehension, aes(x = year, y = N, fill = organization))
+p + geom_col(position = "dodge") + 
+   scale_fill_manual(values = c("tomato1", "seagreen1", "skyblue1", "orchid1")) +
+  labs(x = "Year",
+       y = "Number of Apprehensions",
+       title = "Human Trafficking Apprehensions by Organization, 2009-2018") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 18),
+        strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold", size = 12),
+        strip.text.y = element_text(angle = 0, face = "bold", size = 12)) +
+  facet_grid(type ~ organization) +
+  coord_flip() + 
+  scale_x_reverse(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016))
+
+
+#To make bar plots of apprehensions by orgainzation
+apprehension <- HT_data %>%
+  group_by(year, organization) %>%
+  summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  mutate(freq = N / sum(N),
+         pct = round((freq*100), 0)) %>%
+  subset(year <= 2016)
+
+
+p <- ggplot(apprehension, aes(x = year, y = N, fill = organization))
+p + geom_col(position = "dodge") + 
+  scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016)) +
+  labs(x = "Year",
+       y = "Number of Apprehensions, by Organization") +
+  theme(legend.position = "top") +
+  facet_grid(~organization)
+
+
+
+
+cases <- case_data %>%
+  group_by(year, type) %>%
+  summarise(N = n())
+
+ggplot(cases, aes(x = year, y = N, fill = type)) +
+  geom_col(position = "dodge")
+
+ggplot(cases, aes(x = year, y = N, color = type)) +
+  geom_line()
+
+
+cases <- case_data %>%
+  group_by(year, type) %>%
+  summarise(N = n()) %>%
+  subset(type = sex)
+
+ggplot(cases, aes(x = year, y = N)) +
+  geom_col(position = "dodge")
+
+
+apprehension <- HT_data %>%
+  group_by(year, type) %>%
+  summarise(N = n())
+
+ggplot(apprehension, aes(x = year, y = N)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = c(2009, 2011, 2013, 2015, 2017)) +
+  scale_y_continuous(breaks = seq(0, 110, 20)) +
+  labs(x = "Year",
+       y = "Number of Apprehensions",
+       title = "Human Trafficking Apprehensions in Taiwan") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  facet_grid(~type)
+
+
+
+
+```
+
+To create stacked bar chart of case outcomes
+```{r}
+#To produce stacked bar chart of outcomes in grey-scale
+cases <- case_data %>%
+  mutate(fate = prosecution + guilty + prison) %>%
+  group_by(year, type, fate) %>%
+  subset(year >= 2013) %>%
+ summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  mutate(outcome = case_when(fate %in% 3 ~ "prison",
+                             fate %in% 2 ~ "conviction",
+                             fate %in% 1 ~ "prosecution"))
+  
+cases$outcome <- as.factor(cases$outcome)
+
+cases$outcome <- ordered(cases$outcome, levels = c("prosecution", "conviction", "prison"))
+
+p <- ggplot(cases, aes(x = year, y = N, fill = outcome))
+p + geom_col() +
+  scale_fill_manual(values = c("gray75", "gray50", "gray0")) +
+  facet_grid(~ type) +
+    theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  scale_x_continuous(breaks = c(2013, 2014, 2015, 2016, 2017, 2018)) +
+  labs(x = "Year",
+       y = "Number of Cases, by Outcome",
+       title = "Figure 2:",
+       subtitle = "Outcome of Human Trafficking Cases, 2013-2018")
+  
+
+#To produce stacked bar chart of outcomes in color
+cases <- case_data %>%
+  mutate(fate = prosecution + guilty + prison) %>%
+  group_by(year, type, fate) %>%
+  subset(year >= 2013) %>%
+ summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  mutate(outcome = case_when(fate %in% 3 ~ "prison",
+                             fate %in% 2 ~ "conviction",
+                             fate %in% 1 ~ "prosecution"))
+  
+cases$outcome <- as.factor(cases$outcome)
+
+cases$outcome <- ordered(cases$outcome, levels = c("prosecution", "conviction", "prison"))
+
+p <- ggplot(cases, aes(x = year, y = N, fill = outcome))
+p + geom_col() +
+  scale_fill_manual(values = c("lightblue1", "skyblue1", "royalblue1")) +
+  facet_grid(~ type) +
+    theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 18),
+        strip.text = element_text(face = "bold", size = 12),
+        strip.background = element_blank()) +
+  scale_x_continuous(breaks = c(2013, 2014, 2015, 2016, 2017, 2018)) +
+  labs(x = "Year",
+       y = "Number of Cases",
+       title = "Outcome of Human Trafficking Cases, 2013-2018")
+
+
+
+scale_fill_manual(values = c("turquoise2", "springgreen2", "tomato2"))
+
+  
+  scale_y_continuous(breaks = seq(0, 110, 20))
+
+cases <- case_data %>%
+  mutate(fate = prosecution + guilty + prison) %>%
+  group_by(year, fate) %>%
+  subset(year >= 2013) %>%
+ summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  mutate(freq = N / sum(N),
+         pct = round(freq*100), 0) %>%
+  mutate(outcome = case_when(fate %in% 3 ~ "prison",
+                             fate %in% 2 ~ "guilty",
+                             fate %in% 1 ~ "prosecution"))
+
+
+
+
+cases <- case_data %>%
+  group_by(year, type) %>%
+    mutate(freq_guilty = sum(guilty) / sum(prosecution),
+         pct_guilty = round(freq_guilty*100), 0) %>%
+  mutate(freq_prison = sum(prison) / sum(prosecution),
+         pct_prison = round(freq_prison*100), 0) %>%
+  
+
+cases <- case_data %>%
+  mutate(fate = prosecution + guilty + prison) %>%
+  group_by(year, type, fate) %>%
+  subset(year >= 2013) %>%
+  summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  mutate(freq = N / sum(N),
+         pct = round((freq*100), 0)) %>%
+    mutate(outcome = case_when(fate %in% 3 ~ "prison",
+                             fate %in% 2 ~ "guilty",
+                             fate %in% 1 ~ "prosecution"))
+
+
+
+
+
+cases <- case_data %>%
+  subset(year >= 2013) %>%
+  mutate(fate = prosecution + guilty + prison) %>%
+  group_by(year, type) %>%
+  mutate(total_cases = sum(prosecution)) %>%
+  mutate(total_guilty = sum(guilty)) %>%
+  mutate(pct_guilty = round(sum(guilty / total_cases * 100), 0)) %>%
+  mutate(pct_prison = round(sum(prison / total_cases * 100), 0)) %>%
+  mutate(conversion = round(sum(prison / total_guilty * 100), 0)) %>%
+  ungroup() %>%
+  group_by(year, type, fate) %>%
+  summarise(N = n()) %>%
+  ungroup() %>%
+  group_by(year, type, fate) %>%
+  mutate(freq = N / sum(N),
+         pct = round(freq*100), 0) %>%
+    mutate(outcome = case_when(fate %in% 3 ~ "prison",
+                             fate %in% 2 ~ "guilty",
+                             fate %in% 1 ~ "prosecution"))
+  
+```
+
+
+To create map based on global data set
+```{r}
+global_data1 <- global %>%
+  group_by(citizenship) %>%
+  summarise(N = n())
+
+global_data2 <- global %>%
+  group_by(CountryOfExploitation) %>%
+  summarise(N = n())
+
+
+
+
+```
+
+
+
+```{r}
+apprehension <- HT_data %>%
+  group_by(year, organization) %>%
+  dplyr::summarise(N = n()) %>%
+  mutate(freq = N / sum(N),
+         pct = round((freq*100), 0)) %>%
+  subset(year <= 2016)
+
+ 
+p <- ggplot(apprehension, aes(x = year, y = pct, fill = organization))
+p + geom_col(position = "dodge") + 
+  scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016)) +
+  labs(x = "Year",
+       y = "Percent of Apprehensions, by Organization") +
+  theme(legend.position = "top")
+
+rel_by_region <- gss_sm %>%
+  group_by(bigregion, religion) %>%
+  dplyr::summarize(N = n()) %>%
+  mutate(freq = N / sum(N),
+         pct = round((freq*100), 0))
+
+rel_by_region %>%
+  group_by(bigregion) %>%
+  summarize(total = sum(pct))
+
+p <- ggplot(rel_by_region, aes(x = bigregion, y = pct, fill = religion))
+p + geom_col(position = "dodge") +
+  labs(x = "Region",
+       y = "Percent",
+       fill = "Religion") +
+  theme(legend.position = "top")
+```
+
+
+
+
+```{r}
+library(RColorBrewer)
+library(tile)
+
+sex_cases <- case_data %>%
+  mutate(fate = prosecution + guilty + prison) %>%
+  group_by(year, type) %>%
+  subset(year >= 2013) %>%
+  mutate(total_pros = sum(prosecution),
+         total_con = sum(guilty),
+         total_prison = sum(prison)) %>%
+  subset(type == "sex")
+
+
+  
+  subset(type == "sex")
+
+
+col <- brewer.pal(3, "Dark2")
+
+attach(sex_cases)
+
+pros_trace_sex <- lineplot(x = year,
+                           y = total_pros,
+                           col=col[1],
+                           plot = 1)
+                      
+con_trace_sex <- lineplot(x = year,
+                      y = total_con,
+                      col=col[2],
+                      plot = 1)
+
+prison_trace_sex <- lineplot(x = year,
+                         y = total_prison,
+                         col=col[3],
+                         plot = 1)
+
+# Set up traces with labels and legend
+labelTrace <- textTile(labels=c("Prosecution", "Conviction", "Prison Sentence"),
+                       x=c( 2015,    2015,  2015),
+                       y=c( 200,  120,   40),
+                       col=col,
+                       plot=1)
+
+
+# Plot traces using tile
+tile(pros_trace_sex,
+     con_trace_sex,
+     prison_trace_sex,
+     labelTrace,
+     limits = c(2013, 2018, 0, 220),
+     xaxistitle=list(labels="Year"),
+     yaxistitle=list(labels="Number of Cases, by Outcome", x = 1.25, y = .45),
+     topaxistitle = list(labels="Fate of Sex Trafficking Cases in Taiwan", y = 1))
+
+
+#To plot labor trafficking cases
+labor_cases <- case_data %>%
+  mutate(fate = prosecution + guilty + prison) %>%
+  group_by(year, type) %>%
+  subset(year >= 2013) %>%
+  mutate(total_pros = sum(prosecution),
+         total_con = sum(guilty),
+         total_prison = sum(prison)) %>%
+  subset(type == "labor")
+
+
+
+attach(labor_cases)
+
+pros_trace_labor <- lineplot(x = year,
+                       y = total_pros,
+                       col=col[1],
+                       plot = 1)
+                      
+con_trace_labor <- lineplot(x = year,
+                      y = total_con,
+                      col=col[2],
+                      plot = 1)
+
+prison_trace_labor <- lineplot(x = year,
+                         y = total_prison,
+                         col=col[3],
+                         plot = 1)
+
+
+# Set up traces with labels and legend
+labelTrace <- textTile(labels=c("Prosecution", "Conviction", "Prison Sentence"),
+                       x=c( 2015,    2015,  2015),
+                       y=c( 80,  20,   10),
+                       col=col,
+                       plot=1)
+
+
+# Plot traces using tile
+tile(pros_trace_labor,
+     con_trace_labor,
+     prison_trace_labor,
+     labelTrace,
+     limits = c(2013, 2018, 0, 100),
+     xaxistitle=list(labels="Year"),
+     yaxistitle=list(labels="Number of Cases, by Outcome", x = 1.25, y = .45),
+     topaxistitle = list(labels="Fate of Labor Trafficking Cases in Taiwan", y = 1))
+
+```
